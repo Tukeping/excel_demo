@@ -8,8 +8,6 @@ import com.tukeping.converter.DutyFeeConverter;
 import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.excel.operation.UploadExcelListener;
-import com.tukeping.exception.DuplicateRecordException;
-import com.tukeping.exception.IllegalExcelTemplateException;
 import com.tukeping.service.DutyFeeService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -72,20 +70,12 @@ public class DutyFeeController {
     public String upload(MultipartFile file) throws IOException {
         UploadExcelListener uploadExcelListener = new UploadExcelListener(dutyFeeService);
 
-        try {
-            EasyExcel.read(file.getInputStream(), DutyFeeTable.class, uploadExcelListener)
-                    .headRowNumber(3)
-                    .ignoreEmptyRow(Boolean.TRUE)
-                    .autoTrim(Boolean.TRUE)
-                    .sheet()
-                    .doRead();
-        } catch (DuplicateRecordException ex1) {
-            log.info("", ex1);
-            return "导入Excel文件重复";
-        } catch (IllegalExcelTemplateException ex2) {
-            log.info("", ex2);
-            return "导入Excel模版文件格式不对";
-        }
+        EasyExcel.read(file.getInputStream(), DutyFeeTable.class, uploadExcelListener)
+                .headRowNumber(3)
+                .ignoreEmptyRow(Boolean.TRUE)
+                .autoTrim(Boolean.TRUE)
+                .sheet()
+                .doRead();
 
         return Result.SUCCESS;
     }
