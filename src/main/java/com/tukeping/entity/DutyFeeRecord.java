@@ -10,6 +10,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import java.sql.Timestamp;
 
 /**
@@ -18,14 +19,22 @@ import java.sql.Timestamp;
  **/
 @Data
 @Entity
-@Table(name = "pt_duty_fee_record")
+@Table(name = "pt_duty_fee_record",
+        uniqueConstraints = @UniqueConstraint(name = "uk_record_year_month",
+                columnNames = {"year", "month"}))
 public class DutyFeeRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, columnDefinition = "int comment '总计金额'")
+    @Column(columnDefinition = "int comment '报销年份'")
+    private Integer year;
+
+    @Column(columnDefinition = "varchar(128) comment '报销月份区间'")
+    private String month;
+
+    @Column(columnDefinition = "int comment '总计金额'")
     private Integer totalAmount;
 
     @Column(columnDefinition = "varchar(1024) comment '表格标题'")

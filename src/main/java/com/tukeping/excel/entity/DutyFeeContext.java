@@ -10,6 +10,11 @@ import lombok.Data;
 public class DutyFeeContext {
 
     /**
+     * 上传记录ID
+     */
+    private Integer recordId;
+
+    /**
      * 报销年份
      */
     private Integer year;
@@ -28,11 +33,6 @@ public class DutyFeeContext {
      * 表格标题
      */
     private String tableTitle;
-
-    /**
-     * 盖章
-     */
-    private String unitSeal;
 
     /**
      * 制表人

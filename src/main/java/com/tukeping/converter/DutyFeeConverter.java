@@ -36,6 +36,7 @@ public class DutyFeeConverter {
         if (StringUtils.isEmpty(table.getCompanyName())) {
             feeDetail.setCompanyName(context.getCompanyName());
         }
+        feeDetail.setRecordId(context.getRecordId());
         feeDetail.setAccountId(accountId);
         return feeDetail;
     }
@@ -58,6 +59,7 @@ public class DutyFeeConverter {
         feeDate.setAccountId(accountId);
         feeDate.setFeeDetailId(feeDetailId);
         feeDate.setReimbursementYear(context.getYear());
+        feeDate.setRecordId(context.getRecordId());
         feeDate.setReimbursementMonth(month);
         return feeDate;
     }

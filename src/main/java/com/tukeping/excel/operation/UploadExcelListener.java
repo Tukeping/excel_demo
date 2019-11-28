@@ -14,6 +14,8 @@ import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.entity.DutyFeeRecord;
 import com.tukeping.excel.entity.DutyFeeContext;
 import com.tukeping.excel.entity.DutyFeeTable;
+import com.tukeping.exception.DuplicateRecordException;
+import com.tukeping.exception.IllegalExcelTemplateException;
 import com.tukeping.service.DutyFeeService;
 import com.tukeping.util.BeanUtil;
 import com.tukeping.util.ExcelContextUtil;
@@ -35,8 +37,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
 
-    private static Pattern signRegular = Pattern.compile("(?<=单位盖章：)\\s*\\S*|(?<=制表人：)\\s*\\S*|(?<=审核人：)\\s*\\S*|(?<=审批人：)\\s*\\S*");
+    private static Pattern signRegular = Pattern.compile("(?<=制表人：)\\s*\\S*|(?<=审核人：)\\s*\\S*|(?<=审批人：)\\s*\\S*");
     private static Pattern yearRegular = Pattern.compile("^\\d{4}");
+    private static Pattern monthRegular = Pattern.compile("\\d{1}-\\d{1}");
 
     private DutyFeeService dutyFeeService;
 
@@ -51,13 +54,35 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
             CellData cellData = headMap.values().stream().findFirst().get();
             if (!StringUtils.isEmpty(cellData.getStringValue())) {
                 // extract year
-                Matcher matcher = yearRegular.matcher(cellData.getStringValue().trim());
-                if (matcher.find()) {
-                    Integer year = Integer.parseInt(matcher.group());
+                Matcher yearMatcher = yearRegular.matcher(cellData.getStringValue().trim());
+                if (yearMatcher.find()) {
+                    Integer year = Integer.parseInt(yearMatcher.group());
                     context.readWorkbookHolder().setCustomObject(DutyFeeContext.ofYear(year));
                     // set table title
                     DutyFeeContext dutyFeeContext = ExcelContextUtil.getDutyFeeContextData(context, null);
                     dutyFeeContext.setTableTitle(cellData.getStringValue().trim());
+                    // insert record table
+                    if (null == dutyFeeContext.getRecordId()) {
+
+                        DutyFeeRecord record = new DutyFeeRecord();
+                        record.setTableTitle(dutyFeeContext.getTableTitle());
+                        record.setYear(year);
+
+                        Matcher monthMatcher = monthRegular.matcher(cellData.getStringValue().trim());
+                        if (monthMatcher.find()) {
+                            record.setMonth(monthMatcher.group());
+                        } else {
+                            throw new IllegalExcelTemplateException("Excel模版标题少了月份");
+                        }
+
+                        if (dutyFeeService.existFeeRecordByUk(record.getYear(), record.getMonth())) {
+                            throw new DuplicateRecordException(
+                                    String.format("Excel中%d年%s月的报销表格已导入", record.getYear(), record.getMonth()));
+                        }
+
+                        Integer recordId = dutyFeeService.saveFeeRecord(record);
+                        dutyFeeContext.setRecordId(recordId);
+                    }
                 }
             }
         }
@@ -89,8 +114,11 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
         DutyFeeContext dutyFeeContext = ExcelContextUtil.getDutyFeeContextData(context, null);
-        DutyFeeRecord record = BeanUtil.copyProperties(dutyFeeContext, new DutyFeeRecord());
-        dutyFeeService.saveFeeRecord(record);
+        if (null != dutyFeeContext.getRecordId()) {
+            DutyFeeRecord dutyFeeRecord = dutyFeeService.getFeeRecord(dutyFeeContext.getRecordId());
+            DutyFeeRecord record = BeanUtil.copyProperties(dutyFeeContext, dutyFeeRecord);
+            dutyFeeService.saveFeeRecord(record);
+        }
     }
 
     @Override
@@ -117,24 +145,23 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
                     return;
                 } else if (!StringUtils.isEmpty(cellStr) && cellStr.startsWith(ExcelConstants.UNIT_SEAL)) {
                     Matcher m = signRegular.matcher(cellData.getStringValue());
-                    String[] persons = new String[4];
+                    String[] persons = new String[3];
                     int i = 0;
                     while (m.find()) {
                         persons[i++] = m.group().trim();
                     }
 
-                    log.info("单位盖章 = {} 制表人 = {} 审核人 = {} 审批人 = {}", persons[0], persons[1], persons[2], persons[3]);
+                    log.info("制表人 = {} 审核人 = {} 审批人 = {}", persons[0], persons[1], persons[2]);
 
-                    dutyFeeContext.setUnitSeal(persons[0]);
-                    dutyFeeContext.setCreator(persons[1]);
-                    dutyFeeContext.setAuditor(persons[2]);
-                    dutyFeeContext.setApprover(persons[3]);
+                    dutyFeeContext.setCreator(persons[0]);
+                    dutyFeeContext.setAuditor(persons[1]);
+                    dutyFeeContext.setApprover(persons[2]);
 
                     return;
                 }
             }
-
         }
+
         throw exception;
     }
 }

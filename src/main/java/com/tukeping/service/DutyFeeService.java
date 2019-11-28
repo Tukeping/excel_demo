@@ -48,9 +48,28 @@ public class DutyFeeService {
     @PersistenceContext
     private EntityManager em;
 
+    public List<DutyFeeRecord> findFeeRecordByUk(Integer year, String month) {
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<DutyFeeRecord> criteria = builder.createQuery(DutyFeeRecord.class);
+        Root<DutyFeeRecord> root = criteria.from(DutyFeeRecord.class);
+        criteria.where(
+                builder.equal(root.get("year"), year),
+                builder.equal(root.get("month"), month)
+        );
+        return em.createQuery(criteria).getResultList();
+    }
+
+    public boolean existFeeRecordByUk(Integer year, String month) {
+        return !CollectionUtils.isEmpty(findFeeRecordByUk(year, month));
+    }
+
     public Integer saveFeeRecord(DutyFeeRecord record) {
         dutyFeeRecordRepo.save(record);
         return record.getId();
+    }
+
+    public DutyFeeRecord getFeeRecord(Integer recordId) {
+        return dutyFeeRecordRepo.getOne(recordId);
     }
 
     public void updateContext(DutyFeeTable dutyFeeTable, DutyFeeContext dutyFeeContext) {
@@ -94,7 +113,7 @@ public class DutyFeeService {
         return dateList.stream().peek(this::saveFeeDate).map(DutyFeeDate::getId).collect(Collectors.toList());
     }
 
-    public List<DutyFeeDate> queryFeeDateByUk(DutyFeeDate dutyFeeDate) {
+    public List<DutyFeeDate> findFeeDateByUk(DutyFeeDate dutyFeeDate) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
         CriteriaQuery<DutyFeeDate> criteria = builder.createQuery(DutyFeeDate.class);
         Root<DutyFeeDate> root = criteria.from(DutyFeeDate.class);
@@ -107,12 +126,12 @@ public class DutyFeeService {
     }
 
     public boolean existFeeDateByUk(DutyFeeDate dutyFeeDate) {
-        return !CollectionUtils.isEmpty(queryFeeDateByUk(dutyFeeDate));
+        return !CollectionUtils.isEmpty(findFeeDateByUk(dutyFeeDate));
     }
 
     @Modifying
     @Transactional(rollbackOn = Throwable.class)
-    public void deleteRecordById(int recordId) {
+    public void deleteRecordById(Integer recordId) {
         dutyFeeRecordRepo.deleteById(recordId);
 
         List<DutyFeeDetail> feeDetailList = findDetailListByRecordId(recordId);
@@ -122,7 +141,7 @@ public class DutyFeeService {
         dutyFeeDateRepo.deleteInBatch(feeDateList);
     }
 
-    public List<DutyFeeDate> findDateListByRecordId(int recordId) {
+    public List<DutyFeeDate> findDateListByRecordId(Integer recordId) {
         DutyFeeDate queryFeeDate = new DutyFeeDate();
         queryFeeDate.setRecordId(recordId);
 
@@ -134,7 +153,7 @@ public class DutyFeeService {
         return dutyFeeRecordRepo.findAll();
     }
 
-    public List<DutyFeeDetail> findDetailListByRecordId(int recordId) {
+    public List<DutyFeeDetail> findDetailListByRecordId(Integer recordId) {
         DutyFeeDetail queryFeeDetail = new DutyFeeDetail();
         queryFeeDetail.setRecordId(recordId);
 

@@ -5,16 +5,24 @@ import com.alibaba.fastjson.JSON;
 import com.tukeping.base.Result;
 import com.tukeping.controller.vo.DutyFeeRecordVO;
 import com.tukeping.converter.DutyFeeConverter;
+import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.excel.operation.UploadExcelListener;
+import com.tukeping.exception.DuplicateRecordException;
+import com.tukeping.exception.IllegalExcelTemplateException;
 import com.tukeping.service.DutyFeeService;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.ResourceUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,7 +47,9 @@ import static com.tukeping.constant.ExcelConstants.JSON_CONTENT_TYPE;
  * @author tukeping
  * @date 2019/11/26
  **/
-@RestController("/duty-fee")
+@Slf4j
+@RestController
+@RequestMapping("/duty-fee")
 public class DutyFeeController {
 
     @Autowired
@@ -62,12 +72,20 @@ public class DutyFeeController {
     public String upload(MultipartFile file) throws IOException {
         UploadExcelListener uploadExcelListener = new UploadExcelListener(dutyFeeService);
 
-        EasyExcel.read(file.getInputStream(), DutyFeeTable.class, uploadExcelListener)
-                .headRowNumber(3)
-                .ignoreEmptyRow(Boolean.TRUE)
-                .autoTrim(Boolean.TRUE)
-                .sheet()
-                .doRead();
+        try {
+            EasyExcel.read(file.getInputStream(), DutyFeeTable.class, uploadExcelListener)
+                    .headRowNumber(3)
+                    .ignoreEmptyRow(Boolean.TRUE)
+                    .autoTrim(Boolean.TRUE)
+                    .sheet()
+                    .doRead();
+        } catch (DuplicateRecordException ex1) {
+            log.info("", ex1);
+            return "导入Excel文件重复";
+        } catch (IllegalExcelTemplateException ex2) {
+            log.info("", ex2);
+            return "导入Excel模版文件格式不对";
+        }
 
         return Result.SUCCESS;
     }
@@ -110,14 +128,17 @@ public class DutyFeeController {
         }
     }
 
-//    @DeleteMapping("/excel/record/{recordId}")
-//    @ApiImplicitParam(name = "recordId", value = "记录ID", required = true, dataType = "Integer", paramType = "path")
-//    public String delExcelData(@PathVariable Integer recordId) {
-//        dutyFeeService.deleteRecordById(recordId);
-//        return Result.SUCCESS;
-//    }
+    @DeleteMapping("/excel/record/{recordId}")
+    @ApiOperation("删除上传excel及数据")
+    public String delExcelData(
+            @ApiParam(value = "上传记录ID", required = true, example = "0")
+            @PathVariable Integer recordId) {
+        dutyFeeService.deleteRecordById(recordId);
+        return Result.SUCCESS;
+    }
 
     @GetMapping("/")
+    @ApiOperation("查询所有上传记录信息")
     public List<DutyFeeRecordVO> findAll() {
         return dutyFeeService.findAllRecords()
                 .stream()
@@ -125,11 +146,11 @@ public class DutyFeeController {
                 .collect(Collectors.toList());
     }
 
-//    @GetMapping("/{recordId}")
-//    @ApiImplicitParam(name = "recordId", value = "记录ID", required = true, dataType = "Integer", paramType = "path")
-//    public List<DutyFeeDetail> findDetailListByRecordId(
-//            @ApiParam(example = "0", required = true)
-//            @PathVariable Integer recordId) {
-//        return dutyFeeService.findDetailListByRecordId(recordId);
-//    }
+    @GetMapping("/fee-detail/{recordId}")
+    @ApiOperation("根据上传记录ID查询上传数据")
+    public List<DutyFeeDetail> findDetailListByRecordId(
+            @ApiParam(value = "上传记录ID", required = true, example = "0")
+            @PathVariable Integer recordId) {
+        return dutyFeeService.findDetailListByRecordId(recordId);
+    }
 }
