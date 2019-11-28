@@ -10,6 +10,8 @@ import com.tukeping.repository.DutyFeeAccountRepository;
 import com.tukeping.repository.DutyFeeDateRepository;
 import com.tukeping.repository.DutyFeeDetailRepository;
 import com.tukeping.repository.DutyFeeRecordRepository;
+import org.springframework.data.domain.Example;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -20,6 +22,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,13 +43,13 @@ public class DutyFeeService {
     private DutyFeeDateRepository dutyFeeDateRepo;
 
     @Resource
-    private DutyFeeRecordRepository dutyFeeRecordRep;
+    private DutyFeeRecordRepository dutyFeeRecordRepo;
 
     @PersistenceContext
     private EntityManager em;
 
     public Integer saveFeeRecord(DutyFeeRecord record) {
-        dutyFeeRecordRep.save(record);
+        dutyFeeRecordRepo.save(record);
         return record.getId();
     }
 
@@ -105,5 +108,37 @@ public class DutyFeeService {
 
     public boolean existFeeDateByUk(DutyFeeDate dutyFeeDate) {
         return !CollectionUtils.isEmpty(queryFeeDateByUk(dutyFeeDate));
+    }
+
+    @Modifying
+    @Transactional(rollbackOn = Throwable.class)
+    public void deleteRecordById(int recordId) {
+        dutyFeeRecordRepo.deleteById(recordId);
+
+        List<DutyFeeDetail> feeDetailList = findDetailListByRecordId(recordId);
+        dutyFeeDetailRepo.deleteInBatch(feeDetailList);
+
+        List<DutyFeeDate> feeDateList = findDateListByRecordId(recordId);
+        dutyFeeDateRepo.deleteInBatch(feeDateList);
+    }
+
+    public List<DutyFeeDate> findDateListByRecordId(int recordId) {
+        DutyFeeDate queryFeeDate = new DutyFeeDate();
+        queryFeeDate.setRecordId(recordId);
+
+        Example<DutyFeeDate> feeDateCondition = Example.of(queryFeeDate);
+        return dutyFeeDateRepo.findAll(feeDateCondition);
+    }
+
+    public List<DutyFeeRecord> findAllRecords() {
+        return dutyFeeRecordRepo.findAll();
+    }
+
+    public List<DutyFeeDetail> findDetailListByRecordId(int recordId) {
+        DutyFeeDetail queryFeeDetail = new DutyFeeDetail();
+        queryFeeDetail.setRecordId(recordId);
+
+        Example<DutyFeeDetail> feeDetailCondition = Example.of(queryFeeDetail);
+        return dutyFeeDetailRepo.findAll(feeDetailCondition);
     }
 }

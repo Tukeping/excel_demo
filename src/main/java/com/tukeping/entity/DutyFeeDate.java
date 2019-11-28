@@ -28,6 +28,10 @@ public class DutyFeeDate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(nullable = false,
+            columnDefinition = "int comment '[FK][duty_fee_record]上传记录ID'")
+    private Integer recordId;
+
     @Column(name = "account_id", nullable = false,
             columnDefinition = "int comment '账号ID'")
     private Integer accountId;

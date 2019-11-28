@@ -1,14 +1,19 @@
 package com.tukeping.converter;
 
+import com.tukeping.constant.ExcelConstants;
+import com.tukeping.controller.vo.DutyFeeRecordVO;
 import com.tukeping.entity.DutyFeeAccount;
 import com.tukeping.entity.DutyFeeDate;
 import com.tukeping.entity.DutyFeeDetail;
+import com.tukeping.entity.DutyFeeRecord;
 import com.tukeping.excel.entity.DutyFeeContext;
 import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.util.BeanUtil;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,7 +45,7 @@ public class DutyFeeConverter {
             return null;
         }
 
-        String[] months = table.getReimbursementMonth().split("、");
+        String[] months = table.getReimbursementMonth().split(ExcelConstants.CN_DAWN);
 
         return Stream.of(months)
                 .filter(month -> !StringUtils.isEmpty(month))
@@ -55,5 +60,15 @@ public class DutyFeeConverter {
         feeDate.setReimbursementYear(context.getYear());
         feeDate.setReimbursementMonth(month);
         return feeDate;
+    }
+
+    public DutyFeeRecordVO toRecordVO(DutyFeeRecord record) {
+        DutyFeeRecordVO vo = new DutyFeeRecordVO();
+        vo.setRecordId(record.getId());
+        vo.setTitle(record.getTableTitle());
+        LocalDateTime gmtCreate = record.getGmtCreate().toLocalDateTime();
+        String uploadDate = gmtCreate.format(DateTimeFormatter.ofPattern("yyyy-dd-MM HH:mm:ss"));
+        vo.setUploadDate(uploadDate);
+        return vo;
     }
 }

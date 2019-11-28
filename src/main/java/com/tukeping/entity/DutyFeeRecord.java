@@ -31,9 +31,6 @@ public class DutyFeeRecord {
     @Column(columnDefinition = "varchar(1024) comment '表格标题'")
     private String tableTitle;
 
-    @Column(columnDefinition = "varchar(128) comment '盖章'")
-    private String unitSeal;
-
     @Column(columnDefinition = "varchar(128) comment '制表人'")
     private String creator;
 

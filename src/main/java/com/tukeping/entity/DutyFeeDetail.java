@@ -31,6 +31,9 @@ public class DutyFeeDetail {
     @Column(columnDefinition = "varchar(512) comment '公司名称'")
     private String companyName;
 
+    @Column(nullable = false, columnDefinition = "int comment '[FK][duty_fee_record]上传记录ID'")
+    private Integer recordId;
+
     @Column(nullable = false, columnDefinition = "int comment '[FK][duty_fee_account]账号ID'")
     private Integer accountId;
 

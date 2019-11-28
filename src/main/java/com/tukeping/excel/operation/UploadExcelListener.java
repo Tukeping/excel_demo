@@ -6,6 +6,7 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.exception.ExcelDataConvertException;
 import com.alibaba.excel.metadata.CellData;
 import com.alibaba.excel.util.ConverterUtils;
+import com.tukeping.constant.ExcelConstants;
 import com.tukeping.converter.DutyFeeConverter;
 import com.tukeping.entity.DutyFeeAccount;
 import com.tukeping.entity.DutyFeeDate;
@@ -99,7 +100,7 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
             CellData cellData = ((ExcelDataConvertException) exception).getCellData();
             if (CellDataTypeEnum.STRING.equals(cellData.getType())) {
                 String cellStr = cellData.getStringValue().replaceAll("\\s", "");
-                if ("总计".equals(cellStr)) {
+                if (ExcelConstants.TOTAL_AMOUNT.equals(cellStr)) {
                     LinkedHashMap row = (LinkedHashMap) context.readRowHolder().getCurrentRowAnalysisResult();
                     Iterator iterator = row.entrySet().iterator();
                     Map.Entry tail = null;
@@ -114,7 +115,7 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
                     }
 
                     return;
-                } else if (!StringUtils.isEmpty(cellStr) && cellStr.startsWith("单位盖章")) {
+                } else if (!StringUtils.isEmpty(cellStr) && cellStr.startsWith(ExcelConstants.UNIT_SEAL)) {
                     Matcher m = signRegular.matcher(cellData.getStringValue());
                     String[] persons = new String[4];
                     int i = 0;

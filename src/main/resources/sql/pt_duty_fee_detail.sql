@@ -1,6 +1,7 @@
 create table if not exists pt_duty_fee_detail
 (
     id                    int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    record_id             int          not null comment '[FK][duty_fee_record]上传记录ID',
     account_id            int          not null comment '[FK][duty_fee_account]账号ID',
     reimbursement_date_id int          not null comment '[FK][duty_fee_date]报销年月表主键ID',
     serial_number         int comment '序号',
