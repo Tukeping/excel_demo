@@ -1,5 +1,6 @@
 package com.tukeping.excel.entity;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
 /**
@@ -8,40 +9,31 @@ import lombok.Data;
  **/
 @Data
 public class DutyFeeTable {
-    /**
-     * 序号
-     */
+
+    @ExcelProperty(value = "序号", index = 0)
     private Integer serialNumber;
-    /**
-     * 公司名称
-     */
+
+    @ExcelProperty(value = "公司名称", index = 1)
     private String companyName;
-    /**
-     * 雇员名称
-     */
+
+    @ExcelProperty(value = "雇员名称", index = 2)
     private String employeeName;
-    /**
-     * 银行卡号
-     */
+
+    @ExcelProperty(value = "银行卡号", index = 3)
     private String bankAccountNo;
-    /**
-     * 报销的月份区间
-     */
+
+    @ExcelProperty(value = "报销的月份区间", index = 4)
     private String reimbursementMonth;
-    /**
-     * 值班费
-     */
+
+    @ExcelProperty(value = "值班费", index = 5)
     private Integer dutyFee;
-    /**
-     * 考核奖
-     */
+
+    @ExcelProperty(value = "考核奖", index = 6)
     private Integer assessmentFee;
-    /**
-     * 总费用
-     */
+
+    @ExcelProperty(value = "总费用", index = 7)
     private Integer totalAmount;
-    /**
-     * 备注
-     */
+
+    @ExcelProperty(value = "备注", index = 8)
     private String remark;
 }

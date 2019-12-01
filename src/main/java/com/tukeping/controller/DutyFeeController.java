@@ -9,6 +9,7 @@ import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.excel.operation.UploadExcelListener;
 import com.tukeping.service.DutyFeeService;
+import com.tukeping.service.StationApprovalService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
@@ -34,14 +35,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.tukeping.constant.ExcelConstants.EXCEL_CONTENT_TYPE;
+import static com.tukeping.constant.ExcelConstants.EXCEL_SHEET_NAME;
 import static com.tukeping.constant.ExcelConstants.EXCEL_SUFFIX;
 import static com.tukeping.constant.ExcelConstants.EXCEL_TEMPLATE_NAME;
 import static com.tukeping.constant.ExcelConstants.JSON_CONTENT_TYPE;
 
 /**
+ * https://alibaba-easyexcel.github.io/index.html
+ *
  * @author tukeping
  * @date 2019/11/26
  **/
@@ -55,6 +60,9 @@ public class DutyFeeController {
 
     @Autowired
     private ResourceLoader resourceLoader;
+
+    @Autowired
+    private StationApprovalService stationApprovalService;
 
     private static final int BUFFER_BYTE_SIZE = 1048;
 
@@ -142,5 +150,45 @@ public class DutyFeeController {
             @ApiParam(value = "上传记录ID", required = true, example = "0")
             @PathVariable Integer recordId) {
         return dutyFeeService.findDetailListByRecordId(recordId);
+    }
+
+    /**
+     * 文件下载（失败了会返回一个有部分数据的Excel）
+     * <p>1. 创建excel对应的实体对象 参照{@link DutyFeeTable}
+     * <p>2. 设置返回的 参数
+     * <p>3. 直接写，这里注意，finish的时候会自动关闭OutputStream,当然你外面再关闭流问题不大
+     */
+    @GetMapping("/excel/download-template")
+    public void downloadTemplate(HttpServletResponse response) throws IOException {
+        response.setContentType(EXCEL_CONTENT_TYPE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
+        String fileName = URLEncoder.encode(EXCEL_TEMPLATE_NAME, StandardCharsets.UTF_8.displayName());
+        String fileNameWithSuffix = fileName + EXCEL_SUFFIX;
+
+        response.setHeader("Content-disposition",
+                "attachment;filename=" + fileNameWithSuffix
+                        + ";filename*=utf-8''" + fileNameWithSuffix);
+
+//        List<List<String>> head = new ArrayList<>();
+//        head.add(Lists.newArrayList("yyyy年m-m月窗口午间值班费发放表"));
+
+        List<DutyFeeTable> dutyFeeTables = data();
+        dutyFeeTables.forEach(System.out::println);
+
+        EasyExcel.write(response.getOutputStream(), DutyFeeTable.class)
+                .sheet(EXCEL_SHEET_NAME)
+//                .head(head)
+//                .registerWriteHandler(new LoopMergeStrategy(1, 2, 1))
+                .doWrite(dutyFeeTables);
+    }
+
+    private List<DutyFeeTable> data() {
+        AtomicInteger num = new AtomicInteger(1);
+        return stationApprovalService.findAll().stream()
+                .map(stationApproval -> {
+                    DutyFeeTable table = DutyFeeConverter.toFeeTable(stationApproval);
+                    table.setSerialNumber(num.getAndIncrement());
+                    return table;
+                }).collect(Collectors.toList());
     }
 }

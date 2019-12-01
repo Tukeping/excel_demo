@@ -6,6 +6,7 @@ import com.tukeping.entity.DutyFeeAccount;
 import com.tukeping.entity.DutyFeeDate;
 import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.entity.DutyFeeRecord;
+import com.tukeping.entity.StationApproval;
 import com.tukeping.excel.entity.DutyFeeContext;
 import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.util.BeanUtil;
@@ -72,5 +73,13 @@ public class DutyFeeConverter {
         String uploadDate = gmtCreate.format(DateTimeFormatter.ofPattern("yyyy-dd-MM HH:mm:ss"));
         vo.setUploadDate(uploadDate);
         return vo;
+    }
+
+    public DutyFeeTable toFeeTable(StationApproval stationApproval) {
+        DutyFeeTable table = new DutyFeeTable();
+        table.setBankAccountNo(stationApproval.getBank_card_number_());
+        table.setCompanyName(stationApproval.getDEPARTMENT_());
+        table.setEmployeeName(stationApproval.getNAME_());
+        return table;
     }
 }
