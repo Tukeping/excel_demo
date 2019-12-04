@@ -1,5 +1,7 @@
 package com.tukeping.service;
 
+import com.tukeping.dto.DutyFeeDTO;
+import com.tukeping.dto.DutyFeeDetailDTO;
 import com.tukeping.entity.DutyFeeAccount;
 import com.tukeping.entity.DutyFeeDate;
 import com.tukeping.entity.DutyFeeDetail;
@@ -10,6 +12,7 @@ import com.tukeping.repository.DutyFeeAccountRepository;
 import com.tukeping.repository.DutyFeeDateRepository;
 import com.tukeping.repository.DutyFeeDetailRepository;
 import com.tukeping.repository.DutyFeeRecordRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
  * @author tukeping
  * @date 2019/11/27
  **/
+@Slf4j
 @Service
 public class DutyFeeService {
 
@@ -47,6 +51,35 @@ public class DutyFeeService {
 
     @PersistenceContext
     private EntityManager em;
+
+    @Modifying
+    @Transactional(rollbackOn = Throwable.class)
+    public void saveCompleteDutyFeeData(DutyFeeDTO dutyFeeDTO) {
+        DutyFeeRecord record = dutyFeeDTO.getRecord();
+
+        Integer recordId = saveFeeRecord(record);
+        if (null == record || recordId <= 0) {
+            log.error("save duty fee record failure. record:{}", record);
+            throw new RuntimeException("save duty fee record failure.");
+        }
+
+        for (DutyFeeDetailDTO feeDetailDTO : dutyFeeDTO.getDutyFeeDetail()) {
+            feeDetailDTO.getDutyFeeDetail().setRecordId(recordId);
+
+            Integer dutyFeeDetailId = saveFeeDetail(feeDetailDTO.getDutyFeeDetail());
+            if (null == dutyFeeDetailId || dutyFeeDetailId <= 0) {
+                log.error("save duty fee detail failure. detail:{}", feeDetailDTO.getDutyFeeDetail());
+                throw new RuntimeException("save duty fee detail failure.");
+            }
+
+            for (DutyFeeDate feeDate : feeDetailDTO.getDutyFeeDateList()) {
+                feeDate.setRecordId(recordId);
+                feeDate.setFeeDetailId(dutyFeeDetailId);
+
+                saveFeeDate(feeDate);
+            }
+        }
+    }
 
     public List<DutyFeeRecord> findFeeRecordByUk(Integer year, String month) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -102,6 +135,10 @@ public class DutyFeeService {
         return detail.getId();
     }
 
+    public List<Integer> saveFeeDetailList(List<DutyFeeDetail> detailList) {
+        return detailList.stream().peek(this::saveFeeDetail).map(DutyFeeDetail::getId).collect(Collectors.toList());
+    }
+
     public Integer saveFeeDate(DutyFeeDate date) {
         if (!existFeeDateByUk(date)) {
             dutyFeeDateRepo.save(date);
@@ -118,7 +155,7 @@ public class DutyFeeService {
         CriteriaQuery<DutyFeeDate> criteria = builder.createQuery(DutyFeeDate.class);
         Root<DutyFeeDate> root = criteria.from(DutyFeeDate.class);
         criteria.where(
-                builder.equal(root.get("accountId"), dutyFeeDate.getAccountId()),
+                builder.equal(root.get("feeDetailId"), dutyFeeDate.getFeeDetailId()),
                 builder.equal(root.get("reimbursementYear"), dutyFeeDate.getReimbursementYear()),
                 builder.equal(root.get("reimbursementMonth"), dutyFeeDate.getReimbursementMonth())
         );

@@ -6,9 +6,11 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.exception.ExcelDataConvertException;
 import com.alibaba.excel.metadata.CellData;
 import com.alibaba.excel.util.ConverterUtils;
+import com.google.common.collect.Lists;
 import com.tukeping.constant.ExcelConstants;
 import com.tukeping.converter.DutyFeeConverter;
-import com.tukeping.entity.DutyFeeAccount;
+import com.tukeping.dto.DutyFeeDTO;
+import com.tukeping.dto.DutyFeeDetailDTO;
 import com.tukeping.entity.DutyFeeDate;
 import com.tukeping.entity.DutyFeeDetail;
 import com.tukeping.entity.DutyFeeRecord;
@@ -17,7 +19,6 @@ import com.tukeping.excel.entity.DutyFeeTable;
 import com.tukeping.exception.DuplicateRecordException;
 import com.tukeping.exception.IllegalExcelTemplateException;
 import com.tukeping.service.DutyFeeService;
-import com.tukeping.util.BeanUtil;
 import com.tukeping.util.ExcelContextUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
@@ -43,8 +44,16 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
 
     private DutyFeeService dutyFeeService;
 
+    /**
+     * Local One Excel Data
+     */
+    private DutyFeeDTO dutyFeeDTO;
+
     public UploadExcelListener(DutyFeeService dutyFeeService) {
         this.dutyFeeService = dutyFeeService;
+
+        dutyFeeDTO = new DutyFeeDTO();
+        dutyFeeDTO.setDutyFeeDetail(Lists.newArrayList());
     }
 
     @Override
@@ -80,8 +89,8 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
                                     String.format("Excel中%d年%s月的报销表格已导入", record.getYear(), record.getMonth()));
                         }
 
-                        Integer recordId = dutyFeeService.saveFeeRecord(record);
-                        dutyFeeContext.setRecordId(recordId);
+                        // 缓存record
+                        dutyFeeDTO.setRecord(record);
                     }
                 }
             }
@@ -95,29 +104,24 @@ public class UploadExcelListener extends AnalysisEventListener<DutyFeeTable> {
 
         log.info("{}, dutyFeeContext = {}", dutyFeeTable, dutyFeeContext);
 
-        DutyFeeAccount account = DutyFeeConverter.toAccount(dutyFeeTable);
-        List<DutyFeeAccount> dutyFeeAccountList = dutyFeeService.getAccountByBankNo(account.getBankAccountNo());
-        Integer accountId;
-        if (!CollectionUtils.isEmpty(dutyFeeAccountList)) {
-            accountId = dutyFeeAccountList.get(0).getId();
-        } else {
-            accountId = dutyFeeService.saveAccount(account);
-        }
+        DutyFeeDetailDTO dutyFeeDetailDTO = new DutyFeeDetailDTO();
 
-        DutyFeeDetail feeDetail = DutyFeeConverter.toFeeDetail(accountId, dutyFeeTable, dutyFeeContext);
-        Integer feeDetailId = dutyFeeService.saveFeeDetail(feeDetail);
+        DutyFeeDetail feeDetail = DutyFeeConverter.toFeeDetail(dutyFeeTable, dutyFeeContext);
+        List<DutyFeeDate> feeDateList = DutyFeeConverter.toFeeDateList(dutyFeeTable, dutyFeeContext);
 
-        List<DutyFeeDate> feeDateList = DutyFeeConverter.toFeeDateList(accountId, feeDetailId, dutyFeeContext, dutyFeeTable);
-        dutyFeeService.saveFeeDateList(feeDateList);
+        dutyFeeDetailDTO.setDutyFeeDetail(feeDetail);
+        dutyFeeDetailDTO.setDutyFeeDateList(feeDateList);
+
+        dutyFeeDTO.getDutyFeeDetail().add(dutyFeeDetailDTO);
     }
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
-        DutyFeeContext dutyFeeContext = ExcelContextUtil.getDutyFeeContextData(context, null);
-        if (null != dutyFeeContext.getRecordId()) {
-            DutyFeeRecord dutyFeeRecord = dutyFeeService.getFeeRecord(dutyFeeContext.getRecordId());
-            DutyFeeRecord record = BeanUtil.copyProperties(dutyFeeContext, dutyFeeRecord);
-            dutyFeeService.saveFeeRecord(record);
+        // 保存 record, detail, date 三张表数据, 一起执行保存动作, 需要具备事务性
+        if (null != dutyFeeDTO.getRecord() && !CollectionUtils.isEmpty(dutyFeeDTO.getDutyFeeDetail())) {
+            dutyFeeService.saveCompleteDutyFeeData(dutyFeeDTO);
+        } else {
+            throw new IllegalExcelTemplateException("上传的模版数据处理失败!");
         }
     }
 

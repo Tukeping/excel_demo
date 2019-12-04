@@ -79,7 +79,7 @@ public class DutyFeeController {
         UploadExcelListener uploadExcelListener = new UploadExcelListener(dutyFeeService);
 
         EasyExcel.read(file.getInputStream(), DutyFeeTable.class, uploadExcelListener)
-                .headRowNumber(3)
+                .headRowNumber(2)
                 .ignoreEmptyRow(Boolean.TRUE)
                 .autoTrim(Boolean.TRUE)
                 .sheet()

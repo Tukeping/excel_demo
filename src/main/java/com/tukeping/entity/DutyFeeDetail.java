@@ -34,8 +34,13 @@ public class DutyFeeDetail {
     @Column(nullable = false, columnDefinition = "int comment '[FK][duty_fee_record]上传记录ID'")
     private Integer recordId;
 
-    @Column(nullable = false, columnDefinition = "int comment '[FK][duty_fee_account]账号ID'")
-    private Integer accountId;
+    @Column(name = "bank_account_no", nullable = false,
+            columnDefinition = "varchar(255) comment '银行卡号'")
+    private String bankAccountNo;
+
+    @Column(name = "employee_name", nullable = false,
+            columnDefinition = "varchar(128) comment '雇员名称'")
+    private String employeeName;
 
     @Column(columnDefinition = "int comment '值班费'")
     private Integer dutyFee;

@@ -32,17 +32,16 @@ public class DutyFeeConverter {
         return account;
     }
 
-    public DutyFeeDetail toFeeDetail(Integer accountId, DutyFeeTable table, DutyFeeContext context) {
+    public DutyFeeDetail toFeeDetail(DutyFeeTable table, DutyFeeContext context) {
         DutyFeeDetail feeDetail = BeanUtil.copyProperties(table, new DutyFeeDetail());
         if (StringUtils.isEmpty(table.getCompanyName())) {
             feeDetail.setCompanyName(context.getCompanyName());
         }
         feeDetail.setRecordId(context.getRecordId());
-        feeDetail.setAccountId(accountId);
         return feeDetail;
     }
 
-    public List<DutyFeeDate> toFeeDateList(Integer accountId, Integer feeDetailId, DutyFeeContext context, DutyFeeTable table) {
+    public List<DutyFeeDate> toFeeDateList(DutyFeeTable table, DutyFeeContext context) {
         if (null == table || StringUtils.isEmpty(table.getReimbursementMonth())) {
             return null;
         }
@@ -51,14 +50,12 @@ public class DutyFeeConverter {
 
         return Stream.of(months)
                 .filter(month -> !StringUtils.isEmpty(month))
-                .map(month -> toFeeDate(accountId, feeDetailId, context, Integer.parseInt(month)))
+                .map(month -> toFeeDate(context, Integer.parseInt(month)))
                 .collect(Collectors.toList());
     }
 
-    private static DutyFeeDate toFeeDate(Integer accountId, Integer feeDetailId, DutyFeeContext context, Integer month) {
+    private static DutyFeeDate toFeeDate(DutyFeeContext context, Integer month) {
         DutyFeeDate feeDate = new DutyFeeDate();
-        feeDate.setAccountId(accountId);
-        feeDate.setFeeDetailId(feeDetailId);
         feeDate.setReimbursementYear(context.getYear());
         feeDate.setRecordId(context.getRecordId());
         feeDate.setReimbursementMonth(month);

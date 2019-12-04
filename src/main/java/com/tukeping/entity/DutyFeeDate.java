@@ -21,7 +21,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "pt_duty_fee_date",
         uniqueConstraints = @UniqueConstraint(name = "uk_fee_date",
-                columnNames = {"account_id", "reimbursement_year", "reimbursement_month"}))
+                columnNames = {"fee_detail_id", "reimbursement_year", "reimbursement_month"}))
 public class DutyFeeDate {
 
     @Id
@@ -32,10 +32,6 @@ public class DutyFeeDate {
             columnDefinition = "int comment '[FK][duty_fee_record]上传记录ID'")
     private Integer recordId;
 
-    @Column(name = "account_id", nullable = false,
-            columnDefinition = "int comment '账号ID'")
-    private Integer accountId;
-
     @Column(name = "reimbursement_year", nullable = false,
             columnDefinition = "int comment '报销年份'")
     private Integer reimbursementYear;
@@ -44,7 +40,8 @@ public class DutyFeeDate {
             columnDefinition = "int comment '报销月份'")
     private Integer reimbursementMonth;
 
-    @Column(nullable = false, columnDefinition = "int comment '报销费用明细ID'")
+    @Column(name = "fee_detail_id", nullable = false,
+            columnDefinition = "int comment '报销费用明细ID'")
     private Integer feeDetailId;
 
     @Column(nullable = false)
