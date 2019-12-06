@@ -169,16 +169,11 @@ public class DutyFeeController {
                 "attachment;filename=" + fileNameWithSuffix
                         + ";filename*=utf-8''" + fileNameWithSuffix);
 
-//        List<List<String>> head = new ArrayList<>();
-//        head.add(Lists.newArrayList("yyyy年m-m月窗口午间值班费发放表"));
-
         List<DutyFeeTable> dutyFeeTables = data();
         dutyFeeTables.forEach(System.out::println);
 
         EasyExcel.write(response.getOutputStream(), DutyFeeTable.class)
                 .sheet(EXCEL_SHEET_NAME)
-//                .head(head)
-//                .registerWriteHandler(new LoopMergeStrategy(1, 2, 1))
                 .doWrite(dutyFeeTables);
     }
 
